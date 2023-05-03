@@ -1,14 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template import loader
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect , JsonResponse
 from django.urls import reverse
-from  .models import demousers,todo,simpletodo
+from  .models import demousers,todo,simpletodo,newuser
 from django.contrib import messages
 
 # Create your views here.
 def index(request):
     # template = loader.get_template('templates/index.html')
-    template = loader.get_template('home.html')
+    template = loader.get_template('index.html')
     u = simpletodo.objects.all().values('id','task')
     print(u)
     # return HttpResponse(u)
@@ -34,18 +34,46 @@ def add(request):
         }
         return HttpResponse(template.render(context,request))
 
-def create(request):
+def creates(request):
   if request.method == 'POST':
-    em = request.POST.get['email']
+    em = request.POST.get['task']
     newsub = simpletodo(task=em)
     newsub.save()
     success = 'user '+em+' recorded successfuly'
-    return HttpResponse('success')
+    template = loader.get_template('index.html')
+    return HttpResponse(template.render({}, request))
+  
+  
+def delete(request, id):
+    todo = get_object_or_404(simpletodo, pk=id)
+    todo.delete()
 
+    return redirect('index')
+
+
+def create(request):
+    if request.method == 'POST':
+        name = request.POST.get('task')
+        print(name)
+        nuser = simpletodo(task = name)
+        nuser.save()
+    else:
+        print('unspported data')
+
+    # return  HttpResponse('hello world')
+    # return HttpResponseRedirect('index')
+    return HttpResponseRedirect(reverse('index'))
 
 def home(request):
-  template = loader.get_template('index.html')
-  return HttpResponse(template.render({}, request))
+    template = loader.get_template('index.html')
+    u = simpletodo.objects.all().values('id','task')
+    print(u)
+    # return HttpResponse(u)
+    context = {
+    'data' : u,
+    }
+    return HttpResponse(template.render(context,request))
+  
 
 
 def adds(request):
@@ -80,3 +108,29 @@ def useradmin(request):
      }
      template = loader.get_template('admin.html')
      return HttpResponse(template.render(context,request))
+
+
+def newreg(request):
+    if request.method == 'POST':
+        name = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        phone = request.POST.get('phone_no')
+        address = request.POST.get('address')
+        nuser = newuser(name = name, uemail = email, password= password,phone = phone , address = address)
+        nuser.save()
+    else:
+        print('unspported data')
+
+    return  HttpResponse('hello world')
+
+import requests
+# Create your views here.
+def users(request):
+    #pull data from third party rest api
+    response = requests.get('https://jsonplaceholder.typicode.com/posts')
+    #convert reponse data into json
+    users = response.json()
+    # print(users)
+    # return HttpResponse(users)
+    return JsonResponse(users,safe=False)
